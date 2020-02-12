@@ -1,0 +1,26 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1577703205820.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "8F6F5A26",
+    "lastKnownWriteTime" : 1577704056,
+    "last_content_update" : 1577704056493,
+    "path" : "~/FeatureCreation/R/FcreateFit.R",
+    "project_path" : "R/FcreateFit.R",
+    "properties" : {
+        "cursorPosition" : "15,62",
+        "scrollLine" : "0",
+        "tempName" : "Untitled1"
+    },
+    "read_only" : false,
+    "read_only_alternatives" : [
+    ],
+    "relative_order" : 4,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}
