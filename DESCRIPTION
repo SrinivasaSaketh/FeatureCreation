@@ -1,12 +1,14 @@
 Package: FeatureCreation
 Type: Package
-Title: What the Package Does (Title Case)
+Title: Creates and Selects the best possible features from the given data
 Version: 0.1.0
-Author: Who wrote it
+Authors@R: c(
+  person("Srinivasa", "Saketh", email="srinivasa.saketh@gmail.com", role=c("aut", "cre")),
+  person("Yoshitha", "Akunuri", email="yoshitha.akunuri@gmail.com", role="aut")
+  )
 Imports: data.table,utils,caret,pbmcapply,stats,fmsb,dplyr
-Maintainer: The package maintainer <yourself@somewhere.net>
-Description: More about what it does (maybe more than one line)
-    Use four spaces when indenting paragraphs within the Description.
+Description: Creates all possible features from the given data and 
+    then implements feature selection to choose the best possible features by eliminating the multi-collinear fields.
 License: CC0
 Encoding: UTF-8
 LazyData: true

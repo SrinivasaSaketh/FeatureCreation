@@ -46,7 +46,7 @@ opps<-function(dataframe, returnPossibilities = FALSE)
   #Create more combinations using formula in possibilities and include it in term - List must   be unique
   term<-possiblities$term
 
-  output<-do.call(cbind,pbmclapply(term, getvar, df=dataframe, mc.cores = 4))
+  output<-do.call(cbind,pbmclapply(term, getvar, df=dataframe, mc.cores = 1))
   output_filtered <- data.table(output)[, !grepl("V[0-9]+", names(output)), with=F]
 
   return(data.table(output_filtered))
@@ -97,5 +97,6 @@ fcreate <- function(data, DV, depth=2, returnPossibilities = FALSE)
   if (returnPossibilities == TRUE)
     return (q)
   output<-data.table(cbind(dataframe, data.table(q)[,!colnames(q) %in% colnames(df), with=F]))
+
   return(output)
 }
