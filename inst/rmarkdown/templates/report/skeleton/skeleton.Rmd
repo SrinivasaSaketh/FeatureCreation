@@ -1,0 +1,111 @@
+---
+title: "Featue Engineering Report"
+output: html_document
+params:
+    df: !r data(iris); iris$dvcol<-iris$Species; iris$Species<-NULL; iris
+    dv: "dvcol"
+---
+
+```{r echo=FALSE, warning=FALSE}
+# df <- read.csv("//172.16.1.23/sli/Yoshitha/caterpillar-tube-pricing/data/competition_data/train_set.csv")
+df <- read.csv("//172.16.1.23/sli/Yoshitha/HousePricing/missing_treated_77cols.csv", row.names=1)
+
+```
+
+&nbsp;
+
+## **DATA DISTRIBUTION **
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=TRUE}
+# data <- head(params$df, 100)
+library(BestTransform)
+# dist <- data_distribution(df, "cost")
+dist <- data_distribution(params$df, params$dv)
+# dist <- data_distribution(df, "SalePrice")
+dist[,5:8] <- round(dist[,5:8],2)
+library(DT)
+
+datatable(dist, rownames = F, filter = 'top', options = list(dom = "t", paging = FALSE, scrollY = "50vh", scrollCollapse = T)) %>% formatStyle(
+  'is_dv',
+  target = 'row',
+  backgroundColor = styleEqual(TRUE, '#c2c2a3'),
+  fontWeight = styleEqual(TRUE, "bold")
+)
+
+library(kableExtra)
+# ks <- kable_styling(kable(dist), c("striped", "hover", "responsive"), full_width = F, fixed_thead = T, position = "center")
+# scroll_box(ks, width = "1000px", height = "300px", fixed_thead = F)
+
+
+```
+
+&nbsp;
+
+## **FEATURE CREATION AND SELECTION **
+
+The FeatureCreation package contains a suite of statistical functions that can be applied on all possible combinations of fields in a dataset. It generates features based on the depth specified. Also selects eliminates the unwanted features in the generated list and provided the best feature set that can be fed into any machine learning model.
+
+The process flow in creating and eliminating features is as follows:
+
+&nbsp;
+
+![](`r system.file("logos/FeatureCreationWorkflow.png", package = "FeatureCreation")`)
+
+
+Different statistics used in depth-based feature synthesis:
+
+- *Add*
+- *Subtract*
+- *Multiply*
+- *Divide*
+- *Percentile Rank*
+- *Cumulative Sum*
+- *Cumulative Mean*
+- *Sine*
+- *Cosine*
+- *Tan*
+- *Square*
+- *Cube*
+
+Above mentined operations are performed on all combinations of fields. A simple example to display feature synthesis is as follows:
+
+![](`r system.file("logos/FcreateExample.png", package = "FeatureCreation")`)
+
+
+&nbsp;
+
+After creating multiple features, some of the features are eliminated using the following criteria:
+
+- *Zero Variance or Near Zero Variance*
+- *More than 25% Missing data*
+- *Multicollinearity: Having Variance Inflation Factor > 5*
+
+Final list of features generated are as follows:
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
+library(BestTransform)
+library(FeatureCreation)
+# trans <- BestTransform(df[1:500,], "cost")
+no_print <- function(x)
+{ sink(tempfile())
+  on.exit(sink())
+  invisible(force(x))
+}
+library(data.table)
+trans <- no_print(BestTransform(params$df, params$dv))
+Scaled_df<-data.table(trans$trans_data)[,lapply(.SD,function(x){((x-min(x))/(max(x)-min(x)))}),.SDcols=colnames(trans$trans_data)[colnames(trans$trans_data) != "dvcol"]]
+fcreated <- no_print(fcreate(Scaled_df, "dvcol", depth = 1))
+fselected <- no_print(fselect(fcreated))
+
+# fselected <- no_print(fcreate(trans$trans_data, "dvcol", depth = 1))
+SelectedFields <- fselected$selected_cols
+library(DT)
+
+datatable(data.frame(SelectedFields), rownames = F, filter = 'top', options = list(dom = "t", paging = FALSE, scrollY = "50vh", scrollCollapse = T))
+# kable_styling(kable(out), c("striped", "hover", "responsive"), full_width = F, fixed_thead = T, position = "left")
+
+# row_spec(ks, which(out[,"Rsquared"] == max(out[,"Rsquared"])), bold = T, color = "black", background = "#00ff00")
+  
+```
+
+&nbsp;

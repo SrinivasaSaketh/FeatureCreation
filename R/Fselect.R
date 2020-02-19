@@ -24,7 +24,7 @@ vif_func<-function(in_frame,thresh=10,trace=T)
   vif_init_df <- data.frame(vif_init)
   vif_init <- as.matrix(vif_init[vif_init_df$X2 != Inf,])
   vif_max<-max(as.numeric(vif_init[,2]), na.rm = TRUE)
-  in_frame <- in_frame[,colnames(in_frame) %in% vif_init[,1], with=F]
+  in_frame <- data.table(in_frame)[,colnames(in_frame) %in% vif_init[,1], with=F]
   if(vif_max < thresh){
     if(trace==T){ #print output of each iteration
       cat(paste('All variables have VIF < ', thresh,', max VIF ',round(vif_max,2), sep=''),'\n\n')
@@ -82,9 +82,18 @@ fselect <- function(fcreated)
   w$newcolumnnames<-paste0("V",w$newcolumnnames)
   colnames(fcreated)<-w$newcolumnnames
 
-  f_selected <- vif_func(in_frame = fcreated, thresh=10, trace=TRUE)
+  fcreated[is.na(fcreated)] <- 0
+  is.na(fcreated)<-sapply(fcreated, is.infinite)
+  fcreated[is.na(fcreated)]<-0
+  is.na(fcreated)<-sapply(fcreated, is.nan)
+  fcreated[is.na(fcreated)]<-0
+
+  f_selected <- vif_func(in_frame = fcreated, thresh=5, trace=TRUE)
+  if (is.null(f_selected))
+    return(list(fselected_data = NULL, selected_cols = NULL))
   colnames(f_selected) <- as.character(data.table(w)[newcolumnnames %in% colnames(f_selected),Columnnames])
 
   selected_cols <- colnames(f_selected)
   return(list(fselected_data = f_selected, selected_cols = selected_cols))
 }
+
