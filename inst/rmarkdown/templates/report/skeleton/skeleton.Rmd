@@ -6,22 +6,14 @@ params:
     dv: "dvcol"
 ---
 
-```{r echo=FALSE, warning=FALSE}
-# df <- read.csv("//172.16.1.23/sli/Yoshitha/caterpillar-tube-pricing/data/competition_data/train_set.csv")
-df <- read.csv("//172.16.1.23/sli/Yoshitha/HousePricing/missing_treated_77cols.csv", row.names=1)
-
-```
-
 &nbsp;
 
 ## **DATA DISTRIBUTION **
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=TRUE}
-# data <- head(params$df, 100)
 library(BestTransform)
-# dist <- data_distribution(df, "cost")
+library(kableExtra)
 dist <- data_distribution(params$df, params$dv)
-# dist <- data_distribution(df, "SalePrice")
 dist[,5:8] <- round(dist[,5:8],2)
 library(DT)
 
@@ -32,11 +24,83 @@ datatable(dist, rownames = F, filter = 'top', options = list(dom = "t", paging =
   fontWeight = styleEqual(TRUE, "bold")
 )
 
-library(kableExtra)
-# ks <- kable_styling(kable(dist), c("striped", "hover", "responsive"), full_width = F, fixed_thead = T, position = "center")
-# scroll_box(ks, width = "1000px", height = "300px", fixed_thead = F)
+```
+
+&nbsp;
+
+## **OUTLIER TREATMENT **
+
+The OutlierTreatment package contains a suite of outlier-detection functions that can be used to detect outlier points in the data. This function also treats the detected outliers using a standard Min-Max Capping technique.
+
+The process flow to implement outlier treatment is as follows:
+
+&nbsp;
+
+![](`r system.file("logos/OutliersWorkflow.png", package = "OutlierTreatment")`)
 
 
+Different outlier treatment techniques used:
+
+- **Z-Score Detection**
+- **Rosner's ESD Test**
+- **Box Plot Detection**
+- **Median Absolute Deviation**
+- **Inter Quantile Range Detection**
+- **n-Sigma Detection**
+
+Only if a data point is detected as an outlier in 2 or more techniques listed above, is that data point treated as outlier.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
+library(OutlierTreatment)
+
+no_print <- function(x)
+{ sink(tempfile())
+  on.exit(sink())
+  invisible(force(x))
+}
+outlier <- no_print(bestOutlierTreat(params$df, params$dv))
+out <- outlier$model_perf_metrics
+ks <- kable_styling(kable(out), c("striped", "hover", "responsive"), full_width = F, fixed_thead = T, position = "left")
+
+row_spec(ks, which(out[,2] == max(out[,2]))[1], bold = T, color = "black", background = "#00ff00")
+```
+
+&nbsp;
+
+## **TRANSFORMATIONS **
+
+The BestTransform package contains a suite of transformation-estimating functions that can be used to normalize data. The function of the same name attempts to find and execute the best of all of these potential normalizing transformations.
+
+The process flow to implement best possible transformation is as follows:
+
+&nbsp;
+
+![](`r system.file("logos/TranformationsWorkflow.png", package = "BestTransform")`)
+
+
+The best transformed dataset is chosen based on the performance measures of the three metrics:
+
+- **Pearson P Value**
+- **Shapiro P Value**
+- **Minimum Skewness**
+
+### *Transformation Performance Metrics *
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
+library(BestTransform)
+no_print <- function(x)
+{ sink(tempfile())
+  on.exit(sink())
+  invisible(force(x))
+}
+trans <- no_print(BestTransform(params$df, params$dv))
+
+## Transformation Performance
+out <- trans$model_perf_metrics
+ks <- kable_styling(kable(out), c("striped", "hover", "responsive"), full_width = F, fixed_thead = T, position = "left")
+
+row_spec(ks, which(out[,2] == max(out[,2]))[1], bold = T, color = "black", background = "#00ff00")
 ```
 
 &nbsp;
@@ -85,27 +149,116 @@ Final list of features generated are as follows:
 ```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
 library(BestTransform)
 library(FeatureCreation)
-# trans <- BestTransform(df[1:500,], "cost")
 no_print <- function(x)
 { sink(tempfile())
   on.exit(sink())
   invisible(force(x))
 }
 library(data.table)
-trans <- no_print(BestTransform(params$df, params$dv))
+# trans <- no_print(BestTransform(params$df, params$dv))
 Scaled_df<-data.table(trans$trans_data)[,lapply(.SD,function(x){((x-min(x))/(max(x)-min(x)))}),.SDcols=colnames(trans$trans_data)[colnames(trans$trans_data) != "dvcol"]]
 fcreated <- no_print(fcreate(Scaled_df, "dvcol", depth = 1))
 fselected <- no_print(fselect(fcreated))
 
-# fselected <- no_print(fcreate(trans$trans_data, "dvcol", depth = 1))
 SelectedFields <- fselected$selected_cols
 library(DT)
 
 datatable(data.frame(SelectedFields), rownames = F, filter = 'top', options = list(dom = "t", paging = FALSE, scrollY = "50vh", scrollCollapse = T))
-# kable_styling(kable(out), c("striped", "hover", "responsive"), full_width = F, fixed_thead = T, position = "left")
 
-# row_spec(ks, which(out[,"Rsquared"] == max(out[,"Rsquared"])), bold = T, color = "black", background = "#00ff00")
-  
 ```
 
 &nbsp;
+
+
+## **AUTO ML **
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE, fig.show='hide'}
+LabelEncoding <- function(data, dv)
+{
+  library(data.table)
+  dist <- data_distribution(data, dv)
+  cat_var <- dist[(dist$distribution == "Categorical") & (dist$is_dv ==  FALSE),]$names
+  cat_data <- data[,cat_var]
+  if (length(cat_var) == 0)
+    return (NULL)
+  factor_train <- data.table(cat_data)[,lapply(.SD,function(x){as.factor(x)}),.SDcols=cat_var]
+  
+  label_encoded <- data.table(factor_train)[,lapply(.SD,function(x){as.numeric(x)}),.SDcols=cat_var]
+  return (label_encoded)
+}
+cat_data <- LabelEncoding(params$df, params$dv)
+selected_data <- cbind(fselected$fselected_data, cat_data, trans$trans_data$dvcol)
+colnames(selected_data)[length(colnames(selected_data))] <- "dvcol"
+obj<-no_print(auto_ml_mydata(selected_data))
+```
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
+library(DT)
+leaderboard <- data.frame(obj$leaderboard)
+leaderboard[,2:length(colnames(leaderboard))] <- round(leaderboard[,2:length(colnames(leaderboard))],2)
+datatable(leaderboard, rownames = F, filter = 'top', options = list(dom = "t", paging = FALSE, scrollY = "50vh", scrollCollapse = T))
+
+```
+
+
+
+##### {.tabset }
+```{r, functions, echo=F}
+catHeader <- function(text = "", level = 5) {
+    cat(paste0("\n\n",
+               paste(rep("#", level), collapse = ""),
+               " ", text, "\n"))
+}
+```
+
+
+```{r echo=F, message=FALSE, warning=FALSE, paged.print=FALSE}
+plots <- obj$plots
+var_imps <- obj$varimps
+parameters <- obj$parameters
+model_ids <- obj$leaderboard$model_id[!grepl("Ensemble", obj$leaderboard$model_id)]
+tab_list <- list()
+dir.create(file.path("C:/", "AutoMLPlots"), showWarnings = FALSE)
+no_print(do.call(file.remove, list(list.files("C:/AutoMLPlots/", full.names = TRUE))))
+for (i in 1:length(plots))
+{
+  png(filename=paste0("C:/AutoMLPlots/", model_ids[[i]], ".png"))
+  replayPlot(plots[[i]])
+  dev.off()
+  tab_list[[i]] <- list(plots[[i]], var_imps[[i]], parameters[[i]], model_ids[[i]])
+}
+
+```
+
+
+#### *Select a model to get details : * {.tabset .tabset-dropdown}
+
+```{r, results = "asis", echo = FALSE}
+library(DT)
+for(i in seq_along(tab_list)){
+    tmp <- tab_list[[i]]
+    # As you want to use tabset level here has to be lower than
+    # parent level (ie, parent is 4, so here you have to use 5)
+    catHeader(tmp[[4]], 5)
+    
+    cat(" \n\n***Variable Importance Plot:***\n")
+    cat("\n\n")
+    cat(paste0("![](", "C:/AutoMLPlots/", model_ids[[i]], ".png)"), "\n\n\n")
+    
+    cat(" ***Variable Importance Measures:***\n")
+    DT::datatable(matrix())
+    var_imp <- tmp[[2]]
+    var_imp[,2:length(colnames(var_imp))] <- round(var_imp[,2:length(colnames(var_imp))],2)
+    cat(knitr::knit_print(DT::datatable(var_imp, width = "100%", rownames = F, filter = 'top', options = list(dom = "t", paging = FALSE, scrollY = "50vh", scrollCollapse = T))))
+    
+    cat(" ***Parameters used to build model:***\n")
+    parameters <- tmp[[3]]
+    parameters <- parameters[, c("Metrics", "Values")]
+    cat(knitr::knit_print(DT::datatable(parameters, width = "100%", rownames = F, filter = 'top', options = list(dom = "t", paging = FALSE, scrollY = "50vh", scrollCollapse = T))))
+    
+}
+```
+
+####
+
