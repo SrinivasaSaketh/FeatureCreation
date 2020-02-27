@@ -7,12 +7,12 @@
 #' @usage auto_ml_mydata(data)
 auto_ml_mydata <- function(data)
 {
-  require(caret)
-  library(mlbench)
-  library(h2o)
-  library(rlist)
-  library(xgboost)
-  library(BestTransform)
+  # require(caret)
+  # library(mlbench)
+  # library(h2o)
+  # library(rlist)
+  # library(xgboost)
+  # library(BestTransform)
   h2o.init()
   h2o.no_progress()
   original_cols <- colnames(data)
@@ -97,8 +97,20 @@ auto_ml_mydata <- function(data)
 
 
 }
+
+#' Plot Variable Importances
+#'
+#' Plot variable importances
+#' @param vi Variable importance dataframe returned from H2O model
+#' @param model_name A string to display as title of the plot
+#' @param cols_match A dataframe with original and replaced colnames returned from auto_ml_my_data
+#' @param num_of_features The number of features shown in the plot (default is 10 or all if less than 10)
+
+#' @export
+#' @usage plot_H2o_models(vi, model_name, cols_match, num_of_features = NULL)
 plot_H2o_models <- function (vi, model_name, cols_match, num_of_features = NULL)
 {
+  # require(dplyr)
   if (is.null(num_of_features)) {
     feature_count = length(vi$variable)
     num_of_features = ifelse(feature_count <= 10, length(vi$variable),
@@ -126,11 +138,3 @@ plot_H2o_models <- function (vi, model_name, cols_match, num_of_features = NULL)
   }
 }
 
-
-data <- iris
-data$dvcol <- data$Species
-data$Species <- NULL
-colnames(data) <- c("(Sepal.Length)", "(Sepal.Width)",  "(Petal.Length)", "(Petal.Width)",  "dvcol")
-
-res <- auto_ml_mydata(data)
-plot_H2o_models()
