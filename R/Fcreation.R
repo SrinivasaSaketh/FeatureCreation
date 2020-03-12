@@ -96,7 +96,7 @@ fcreate <- function(data, DV, depth=2, returnPossibilities = FALSE)
   q <- opps_gen_iter(df,depth, returnPossibilities)
   if (returnPossibilities == TRUE)
     return (q)
-  output<-data.table(cbind(dataframe, data.table(q)[,!colnames(q) %in% colnames(df), with=F]))
+  output<-data.table(cbind(df, data.table(q)[,!colnames(q) %in% colnames(df), with=F]))
 
   return(output)
 }
