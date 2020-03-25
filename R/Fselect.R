@@ -28,6 +28,7 @@ vif_func<-function(in_frame,thresh=10,trace=T)
   if(vif_max < thresh){
     if(trace==T){ #print output of each iteration
       cat(paste('All variables have VIF < ', thresh,', max VIF ',round(vif_max,2), sep=''),'\n\n')
+      return(in_frame)
     }
     # return(var_names)
   }else{
